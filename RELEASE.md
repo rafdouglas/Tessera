@@ -58,10 +58,10 @@ Create the release manually through the GitHub web interface.
    ./scripts/prepare_release.sh
    ```
 
-   This creates versioned ZIPs in `releases/`:
-   - `releases/tessera-X.Y.Z.zip`
-   - `releases/percentage_split-X.Y.Z.zip`
-   - `releases/stripe_hatching-X.Y.Z.zip`
+   This creates versioned ZIPs in `dist/`:
+   - `dist/tessera-X.Y.Z.zip`
+   - `dist/percentage_split-X.Y.Z.zip`
+   - `dist/stripe_hatching-X.Y.Z.zip`
 
 2. **Create and push a tag:**
    ```bash
@@ -77,7 +77,7 @@ Create the release manually through the GitHub web interface.
    - Release title: `Tessera 0.5.5`
    - Click **"Generate release notes"** for automatic changelog
    - Edit description as needed
-   - Drag and drop the three ZIP files from `releases/` folder
+   - Drag and drop the three ZIP files from `dist/` folder
    - Mark as pre-release if needed (uncheck for stable releases)
    - Click **"Publish release"**
 

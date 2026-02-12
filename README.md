@@ -130,13 +130,13 @@ python scripts/package.py
 #   dist/percentage_split.zip   # Standalone
 #   dist/stripe_hatching.zip    # Standalone
 
-# Prepare versioned release files (creates ZIPs in releases/)
+# Prepare versioned release files (creates ZIPs in dist/)
 ./scripts/prepare_release.sh
 
-# Outputs:
-#   releases/tessera-0.5.4.zip            # Main plugin
-#   releases/percentage_split-0.5.4.zip   # Standalone
-#   releases/stripe_hatching-0.5.4.zip    # Standalone
+# Outputs (in dist/):
+#   tessera-0.5.4.zip            # Main plugin (versioned)
+#   percentage_split-0.5.4.zip   # Standalone (versioned)
+#   stripe_hatching-0.5.4.zip    # Standalone (versioned)
 ```
 
 The packaging script automatically vendors the shared library into each plugin.

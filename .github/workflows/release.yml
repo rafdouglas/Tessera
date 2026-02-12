@@ -23,11 +23,11 @@ jobs:
         run: echo "VERSION=${GITHUB_REF#refs/tags/v}" >> $GITHUB_OUTPUT
 
       - name: Package plugins
-        run: python scripts/package.py --output-dir releases
+        run: python scripts/package.py
 
       - name: Rename ZIPs with version
         run: |
-          cd releases
+          cd dist
           mv tessera.zip tessera-${{ steps.version.outputs.VERSION }}.zip
           mv percentage_split.zip percentage_split-${{ steps.version.outputs.VERSION }}.zip
           mv stripe_hatching.zip stripe_hatching-${{ steps.version.outputs.VERSION }}.zip
@@ -36,9 +36,9 @@ jobs:
         uses: softprops/action-gh-release@v2
         with:
           files: |
-            releases/tessera-${{ steps.version.outputs.VERSION }}.zip
-            releases/percentage_split-${{ steps.version.outputs.VERSION }}.zip
-            releases/stripe_hatching-${{ steps.version.outputs.VERSION }}.zip
+            dist/tessera-${{ steps.version.outputs.VERSION }}.zip
+            dist/percentage_split-${{ steps.version.outputs.VERSION }}.zip
+            dist/stripe_hatching-${{ steps.version.outputs.VERSION }}.zip
           body: |
             ## Tessera ${{ steps.version.outputs.VERSION }}
 

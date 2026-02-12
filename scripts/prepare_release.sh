@@ -20,18 +20,19 @@ echo "Preparing release for version: $VERSION"
 
 # Run packaging script to create ZIPs in dist/
 echo "Running packaging script..."
-python scripts/package.py --output-dir dist
+python scripts/package.py
 
-# Copy to releases/ with version numbers
-echo "Copying to releases/ with version numbers..."
-mkdir -p releases
-cp dist/tessera.zip releases/tessera-${VERSION}.zip
-cp dist/percentage_split.zip releases/percentage_split-${VERSION}.zip
-cp dist/stripe_hatching.zip releases/stripe_hatching-${VERSION}.zip
+# Rename with version numbers in dist/
+echo "Creating versioned ZIPs in dist/..."
+cd dist
+cp tessera.zip tessera-${VERSION}.zip
+cp percentage_split.zip percentage_split-${VERSION}.zip
+cp stripe_hatching.zip stripe_hatching-${VERSION}.zip
+cd ..
 
 echo ""
-echo "✓ Release files ready in releases/:"
-ls -lh releases/*-${VERSION}.zip
+echo "✓ Release files ready in dist/:"
+ls -lh dist/*-${VERSION}.zip
 
 echo ""
 echo "Next steps:"
@@ -39,4 +40,4 @@ echo "1. Create a git tag: git tag -a v${VERSION} -m 'Release ${VERSION}'"
 echo "2. Push the tag: git push origin v${VERSION}"
 echo "3. GitHub Actions will automatically create the release"
 echo ""
-echo "Or manually upload files from releases/ to GitHub Releases page."
+echo "Or manually upload files from dist/ to GitHub Releases page."

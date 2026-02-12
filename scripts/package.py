@@ -93,13 +93,14 @@ def create_plugin_zip(plugin_dir: Path, output_path: Path) -> None:
     print(f"Created: {output_path}")
 
 
-def package_standalone_plugin(plugin_dir: Path, lib_dir: Path, output_dir: Path) -> None:
+def package_standalone_plugin(plugin_dir: Path, lib_dir: Path, output_dir: Path, license_file: Path) -> None:
     """Package a standalone plugin by vendoring shared lib and creating ZIP.
 
     Args:
         plugin_dir: Path to plugin directory
         lib_dir: Path to lib/tessera_common/
         output_dir: Output directory for ZIP files
+        license_file: Path to LICENSE file to include
     """
     plugin_name = plugin_dir.name
     print(f"\nPackaging standalone plugin: {plugin_name}")
@@ -111,17 +112,23 @@ def package_standalone_plugin(plugin_dir: Path, lib_dir: Path, output_dir: Path)
 
     vendor_shared_lib(lib_dir, infra_dir)
 
+    # Copy LICENSE file
+    if license_file.exists():
+        shutil.copy2(license_file, plugin_dir / "LICENSE")
+        print(f"  Copied LICENSE")
+
     # Create ZIP
     zip_path = output_dir / f"{plugin_name}.zip"
     create_plugin_zip(plugin_dir, zip_path)
 
 
-def package_main_plugin(plugin_dir: Path, output_dir: Path) -> None:
+def package_main_plugin(plugin_dir: Path, output_dir: Path, license_file: Path) -> None:
     """Package main plugin by resolving symlinks and creating ZIP.
 
     Args:
         plugin_dir: Path to main plugin directory
         output_dir: Output directory for ZIP files
+        license_file: Path to LICENSE file to include
     """
     plugin_name = plugin_dir.name
     print(f"\nPackaging main plugin: {plugin_name}")
@@ -133,6 +140,11 @@ def package_main_plugin(plugin_dir: Path, output_dir: Path) -> None:
 
         print(f"  Resolving symlinks...")
         resolve_symlinks_in_directory(plugin_dir, tmp_plugin)
+
+        # Copy LICENSE file
+        if license_file.exists():
+            shutil.copy2(license_file, tmp_plugin / "LICENSE")
+            print(f"  Copied LICENSE")
 
         # Create ZIP from temp directory
         zip_path = output_dir / f"{plugin_name}.zip"
@@ -157,6 +169,7 @@ def main(argv=None):
 
     lib_dir = project_root / "lib" / "ideogis_common"
     plugins_dir = project_root / "plugins"
+    license_file = project_root / "LICENSE"
     output_dir = args.output_dir
 
     # Validate paths
@@ -168,6 +181,9 @@ def main(argv=None):
         print(f"ERROR: Plugins directory not found: {plugins_dir}", file=sys.stderr)
         return 1
 
+    if not license_file.exists():
+        print(f"WARNING: LICENSE file not found: {license_file}", file=sys.stderr)
+
     # Create output directory
     output_dir.mkdir(parents=True, exist_ok=True)
     print(f"Output directory: {output_dir.absolute()}")
@@ -177,14 +193,14 @@ def main(argv=None):
     for plugin_name in standalone_plugins:
         plugin_dir = plugins_dir / plugin_name
         if plugin_dir.exists():
-            package_standalone_plugin(plugin_dir, lib_dir, output_dir)
+            package_standalone_plugin(plugin_dir, lib_dir, output_dir, license_file)
         else:
             print(f"WARNING: Plugin directory not found: {plugin_dir}", file=sys.stderr)
 
     # Package main plugin
     main_plugin_dir = plugins_dir / "tessera"
     if main_plugin_dir.exists():
-        package_main_plugin(main_plugin_dir, output_dir)
+        package_main_plugin(main_plugin_dir, output_dir, license_file)
     else:
         print(f"WARNING: Main plugin directory not found: {main_plugin_dir}", file=sys.stderr)
 
