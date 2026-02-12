@@ -1,0 +1,1 @@
+../../../lib/ideogis_common/crs_manager.py

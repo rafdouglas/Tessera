@@ -1,0 +1,1 @@
+../../../lib/ideogis_common/scale_helpers.py

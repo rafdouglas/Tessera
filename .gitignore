@@ -1,0 +1,34 @@
+# Python
+__pycache__/
+*.py[cod]
+*.egg-info/
+
+# Build artifacts
+dist/
+
+# Test data (fetched by scripts/download_test_data.py)
+test_data/
+
+# Test / IDE
+.pytest_cache/
+*.qmd
+
+# AI tooling
+.omc/
+.claude/
+CLAUDE.md
+CLAUDE_prev.md
+AGENTS.md
+
+# Build / packaging
+assets/
+
+# Editor / OS
+*.swp
+*.swo
+*~
+.DS_Store
+Thumbs.db
+
+# Local config
+settings.json

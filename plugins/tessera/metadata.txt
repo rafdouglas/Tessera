@@ -1,0 +1,26 @@
+[general]
+name=Tessera
+qgisMinimumVersion=3.28
+description=Cartographic toolkit for QGIS with 9 algorithms — tile grids (square, hexagon, circle, triangle, diamond), proportional fills, cartograms, sketchy borders, force-directed layouts, and grid arrangements.
+version=0.5.4
+author=RafDouglas C. Tommasi
+email=rafdouglas@exponential.engineering
+about=Tessera provides 9 cartographic algorithms for QGIS: Tile Fill (5 tile shapes: square, hexagon, circle, triangle, diamond), Percentage Split, Stripe Hatching, Snap to Grid, Sketchy Borders, Scale by Value, Replace with Shape, Arrange Features (with quality presets), and Grid Arrangement. Create thematic maps where geographic shapes communicate data through tile grids, proportional fills, cartogram transforms, hand-drawn styling, force-directed layouts, and grid arrangements. No external dependencies.
+tracker=https://github.com/rafdouglas/tessera/issues
+repository=https://github.com/rafdouglas/tessera
+tags=cartography,ideogram,thematic,tile-fill,tessellate,cartogram,dorling,waffle,hatching
+homepage=https://github.com/rafdouglas/tessera
+category=Analysis
+icon=resources/icon.png
+experimental=True
+deprecated=False
+changelog=0.5.4 - Snap to Grid edge-following, CRS distortion fix, auto-repair invalid geometries, multipart fix, unify _tessera_part, Arrange Features UI, contributor guide
+  0.5.3 - Rename Tessellate to Tile Fill, standardize metadata prefix _ts_ to _tessera_
+  0.5.2 - Code quality: decompose god methods, extract shared helpers, consolidate test infrastructure
+  0.5.1 - Triangle and diamond tile shapes for Tile Fill, quality presets for Arrange Features
+  0.5.0 - Split Grid Arrangement into standalone algorithm (9 algorithms total)
+  0.4.1 - Force-directed fixes: area-equivalent radius, multipart explosion, geometry refinement
+  0.4.0 - Engineering CRS, comprehensive help text, arrange features enhancements
+  0.3.0 - Cartogram algorithms: Scale by Value, Replace with Shape, Arrange Features
+  0.2.0 - Tessellate tile flagging, Snap to Grid, Sketchy Borders, topology support
+  0.1.0 - Foundation: Tessellate, Percentage Split, Stripe Hatching

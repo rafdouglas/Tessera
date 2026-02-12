@@ -1,0 +1,18 @@
+[project]
+name = "tessera"
+version = "0.5.4"
+description = "Tessera — Cartographic ideogram toolkit for QGIS"
+requires-python = ">=3.9"
+license = "GPL-3.0-only"
+
+[tool.pytest.ini_options]
+testpaths = ["tests"]
+python_files = ["test_*.py"]
+python_classes = ["Test*"]
+python_functions = ["test_*"]
+markers = [
+    "gui: marks tests that require full QGIS GUI (may be skipped in CI)",
+    "slow: marks tests that take significant time",
+    "integration: marks tests using real data files",
+]
+addopts = "-v --tb=short"
