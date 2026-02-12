@@ -57,3 +57,8 @@ Each entry should include:
 - **Description:** Three feature enhancements: (1) Triangle tile shape for Tessellate (routes through existing triangular grid generator), (2) Diamond tile shape for Tessellate (45°-rotated squares, new `_cell_polygons_diamond()`), (3) Quality preset meta-parameter for Arrange Features (Fast/Balanced/Precise/Custom) controlling force simulation params via `_effective_params()`.
 - **Tests:** 449 passing, 0 failures (9 new tests)
 - **Files:** tessellate.py, grid_generators.py, arrange_features.py, test_tessellate.py, test_arrange_features.py, test_dialog.py, test_base_algorithm.py
+
+### 2026-02-12 - Release workflow and automation
+- **Status:** Completed
+- **Description:** Created release infrastructure for v0.5.4: (1) GitHub Actions workflow `.github/workflows/release.yml` that auto-creates releases when version tags are pushed, (2) `scripts/prepare_release.sh` script to package and prepare versioned ZIPs in `releases/` folder, (3) Packaged v0.5.4 release files (tessera-0.5.4.zip, percentage_split-0.5.4.zip, stripe_hatching-0.5.4.zip).
+- **Files:** .github/workflows/release.yml (new), scripts/prepare_release.sh (new), releases/ (populated), README.md (building section updated)

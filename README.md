@@ -126,9 +126,17 @@ cd tessera
 python scripts/package.py
 
 # Outputs:
-#   dist/tessera-0.4.0.zip            # Main plugin
-#   dist/percentage_split-0.4.0.zip   # Standalone
-#   dist/stripe_hatching-0.4.0.zip    # Standalone
+#   dist/tessera.zip            # Main plugin
+#   dist/percentage_split.zip   # Standalone
+#   dist/stripe_hatching.zip    # Standalone
+
+# Prepare versioned release files (creates ZIPs in releases/)
+./scripts/prepare_release.sh
+
+# Outputs:
+#   releases/tessera-0.5.4.zip            # Main plugin
+#   releases/percentage_split-0.5.4.zip   # Standalone
+#   releases/stripe_hatching-0.5.4.zip    # Standalone
 ```
 
 The packaging script automatically vendors the shared library into each plugin.
@@ -267,6 +275,12 @@ Tessera is released under the **GNU General Public License v3 (GPLv3)**. See [LI
 **0.2.0** — Tile Fill tile flagging, Snap to Grid, Sketchy Borders, topology support
 
 **0.1.0** — Foundation: Tile Fill, Percentage Split, Stripe Hatching
+
+---
+
+## Releasing
+
+See [RELEASE.md](RELEASE.md) for instructions on creating and publishing releases.
 
 ---
 

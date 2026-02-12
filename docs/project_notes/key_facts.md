@@ -39,6 +39,7 @@ flatpak run --command=python3 org.qgis.qgis -c "import sys; sys.path.insert(0, '
 - **Version:** 0.5.4
 - **Shared infrastructure modules:** `crs_manager.py`, `feature_builder.py`, `geometry_helpers.py`, `scale_helpers.py` (symlinked from `lib/ideogis_common/`)
 - **Test helpers:** `tests/helpers.py` — `make_fields()`, `make_feature()`, `make_layer()`
+- **Release process:** See `RELEASE.md` for automated and manual release workflows
 
 ## Plugin Installation (Dev)
 

@@ -1,0 +1,60 @@
+name: Create Release
+
+on:
+  push:
+    tags:
+      - 'v*'  # Trigger on version tags like v0.5.4
+
+jobs:
+  release:
+    runs-on: ubuntu-latest
+
+    steps:
+      - name: Checkout code
+        uses: actions/checkout@v4
+
+      - name: Set up Python
+        uses: actions/setup-python@v5
+        with:
+          python-version: '3.11'
+
+      - name: Extract version from tag
+        id: version
+        run: echo "VERSION=${GITHUB_REF#refs/tags/v}" >> $GITHUB_OUTPUT
+
+      - name: Package plugins
+        run: python scripts/package.py --output-dir releases
+
+      - name: Rename ZIPs with version
+        run: |
+          cd releases
+          mv tessera.zip tessera-${{ steps.version.outputs.VERSION }}.zip
+          mv percentage_split.zip percentage_split-${{ steps.version.outputs.VERSION }}.zip
+          mv stripe_hatching.zip stripe_hatching-${{ steps.version.outputs.VERSION }}.zip
+
+      - name: Create Release
+        uses: softprops/action-gh-release@v2
+        with:
+          files: |
+            releases/tessera-${{ steps.version.outputs.VERSION }}.zip
+            releases/percentage_split-${{ steps.version.outputs.VERSION }}.zip
+            releases/stripe_hatching-${{ steps.version.outputs.VERSION }}.zip
+          body: |
+            ## Tessera ${{ steps.version.outputs.VERSION }}
+
+            Cartographic ideogram toolkit for QGIS with 9 algorithms.
+
+            ### Installation
+
+            Download the appropriate ZIP file:
+            - **tessera-${{ steps.version.outputs.VERSION }}.zip** - Main plugin with all 9 algorithms
+            - **percentage_split-${{ steps.version.outputs.VERSION }}.zip** - Standalone Percentage Split plugin
+            - **stripe_hatching-${{ steps.version.outputs.VERSION }}.zip** - Standalone Stripe Hatching plugin
+
+            Extract to `~/.local/share/QGIS/QGIS3/profiles/default/python/plugins/` or install via QGIS Plugin Manager.
+
+            See the [README](https://github.com/rafdouglas/tessera) for full documentation.
+          draft: false
+          prerelease: false
+        env:
+          GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
