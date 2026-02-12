@@ -17,8 +17,8 @@ Tessera provides 9 algorithms for creating compelling cartographic visualization
 
 | | | |
 |---|---|---|
-| <!-- ![Tessellate example](docs/images/gallery-01.png) --> | <!-- ![Percentage Split example](docs/images/gallery-02.png) --> | <!-- ![Stripe Hatching example](docs/images/gallery-03.png) --> |
-| <!-- ![Scale by Value example](docs/images/gallery-04.png) --> | <!-- ![Replace with Shape example](docs/images/gallery-05.png) --> | <!-- ![Arrange Features example](docs/images/gallery-06.png) --> |
+| ![Snap to Hex Grid](/images/screenshots/Europa_01_2.png)  | ![Fill with hexagons and flag by percentage](/images/screenshots/Europa_01_4.png)  | ![Retro fun!](/images/screenshots/Europa_01_6.png)  |
+| ![Shapes + coalesce + Fill with Tiles](/images/screenshots/Africa_01_10.png)  |![Snap to Hex + Hex fill + Scale + Arrange on a grid](/images/screenshots/Africa_02_5.png) |![Snap to Hex + Hex fill + Scale + Arrange on a grid (particular)](/images/screenshots/Africa_02_6.png)  |
 
 ---
 
