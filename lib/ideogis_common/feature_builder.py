@@ -1,5 +1,33 @@
 """Consistent output feature/layer construction for Tessera."""
+from PyQt5.QtCore import QMetaType, QVariant
 from qgis.core import QgsFeature, QgsField, QgsFields, QgsGeometry
+
+_METATYPE_TO_VARIANT = {
+    QMetaType.Type.QString: QVariant.String,
+    QMetaType.Type.Int: QVariant.Int,
+    QMetaType.Type.Double: QVariant.Double,
+    QMetaType.Type.Bool: QVariant.Bool,
+}
+
+_qgsfield_accepts_metatype = None
+
+
+def _resolve_field_type(metatype):
+    """Convert QMetaType.Type to QVariant.Type on QGIS versions that need it.
+
+    QGIS < 3.38 does not accept QMetaType.Type in QgsField(); those versions
+    require QVariant.Type instead. Detection is lazy and cached.
+    """
+    global _qgsfield_accepts_metatype
+    if _qgsfield_accepts_metatype is None:
+        try:
+            QgsField(name='_compat_probe', type=QMetaType.Type.QString)
+            _qgsfield_accepts_metatype = True
+        except TypeError:
+            _qgsfield_accepts_metatype = False
+    if _qgsfield_accepts_metatype:
+        return metatype
+    return _METATYPE_TO_VARIANT[metatype]
 
 
 def create_output_fields(input_fields, extra_fields):
@@ -28,7 +56,7 @@ def create_output_fields(input_fields, extra_fields):
 
     # Extra fields appended in order
     for name, metatype in extra_fields:
-        result.append(QgsField(name=name, type=metatype))
+        result.append(QgsField(name=name, type=_resolve_field_type(metatype)))
 
     return result
 

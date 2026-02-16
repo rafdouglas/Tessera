@@ -2,7 +2,7 @@
 name=Percentage Split
 qgisMinimumVersion=3.28
 description=Split polygons by area proportion. Part of the Tessera cartographic toolkit. For the full suite of 9 algorithms, install Tessera.
-version=0.5.4
+version=0.5.5
 author=RafDouglas C. Tommasi
 email=rafdouglas@exponential.engineering
 about=Split each polygon into two sub-polygons whose area ratio corresponds to a numeric attribute value. Supports horizontal, vertical, diagonal, and radial orientations.

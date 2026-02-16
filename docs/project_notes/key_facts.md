@@ -58,17 +58,18 @@ ln -sf $(pwd)/plugins/tessera \
 - **50K feature warning threshold**
 - **EQUAL_AREA_PROJS:** aea, laea, cea, eqearth, moll, sinu, eck4, eck6
 
-## QgsField Construction (QGIS 3.44.6)
+## QgsField Construction (backward-compatible)
 
+Algorithms define field types using `QMetaType.Type`:
 ```python
 from PyQt5.QtCore import QMetaType
-QgsField(name='field_name', type=QMetaType.Type.QString)   # String
-QgsField(name='field_name', type=QMetaType.Type.Double)    # Float/Double
-QgsField(name='field_name', type=QMetaType.Type.Int)       # Integer
-QgsField(name='field_name', type=QMetaType.Type.Bool)      # Boolean
+extra_fields = [('_tessera_algorithm', QMetaType.Type.QString)]
 ```
 
-Do NOT use `QVariant.String` etc. — deprecated in 3.44.
+`feature_builder._resolve_field_type()` handles the actual `QgsField` construction,
+auto-detecting whether `QMetaType.Type` is accepted (QGIS 3.38+) or needs
+conversion to `QVariant.Type` (QGIS < 3.38). Do NOT construct `QgsField` directly
+with `QMetaType.Type` outside of `feature_builder.py`.
 
 ## CRS Operations
 

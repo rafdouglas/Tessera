@@ -78,19 +78,23 @@ Each decision should include:
 
 ---
 
-### ADR-004: QMetaType.Type for QgsField Construction (2026-02-07)
+### ADR-004: QMetaType.Type for QgsField Construction (2026-02-07, amended 2026-02-16)
 
 **Context:**
 - QGIS 3.44.6 deprecates `QgsField('name', QVariant.String)` constructor
 - New style: `QgsField(name='name', type=QMetaType.Type.QString)`
+- QGIS < 3.38 does not accept `QMetaType.Type` in `QgsField()` (TypeError)
+- User report confirmed breakage on QGIS 3.34.0
 
 **Decision:**
-- Use `QMetaType.Type` exclusively: `QString`, `Double`, `Int`, `Bool`
-- No QVariant fallback — confirmed working on QGIS 3.44.6
+- Algorithms define field types using `QMetaType.Type` (forward-compatible)
+- `feature_builder._resolve_field_type()` detects at first use whether `QgsField` accepts `QMetaType.Type`; falls back to `QVariant.Type` mapping on older QGIS
+- Compatibility shim lives in one place: `feature_builder.py`
 
 **Consequences:**
-- Avoids deprecation warnings
-- Not backward-compatible with QGIS < 3.38 (acceptable, min version is 3.28 but we target current)
+- Works on QGIS 3.28+ (our declared minimum) through current
+- No deprecation warnings on 3.44+
+- Single conversion point — algorithms don't need version-specific code
 
 ---
 

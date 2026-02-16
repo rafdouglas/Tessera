@@ -2,7 +2,7 @@
 name=Stripe Hatching
 qgisMinimumVersion=3.28
 description=Fill polygons with parallel stripes. Part of the Tessera cartographic toolkit. For the full suite of 9 algorithms, install Tessera.
-version=0.5.4
+version=0.5.5
 author=RafDouglas C. Tommasi
 email=rafdouglas@exponential.engineering
 about=Fill each polygon with parallel rectangular stripes at configurable angle and spacing. Topology-aware for seamless multi-polygon fills.

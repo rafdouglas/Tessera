@@ -2,7 +2,7 @@
 name=Tessera
 qgisMinimumVersion=3.28
 description=Cartographic toolkit for QGIS with 9 algorithms — tile grids (square, hexagon, circle, triangle, diamond), proportional fills, cartograms, sketchy borders, force-directed layouts, and grid arrangements.
-version=0.5.4
+version=0.5.5
 author=RafDouglas C. Tommasi
 email=rafdouglas@exponential.engineering
 about=Tessera provides 9 cartographic algorithms for QGIS: Tile Fill (5 tile shapes: square, hexagon, circle, triangle, diamond), Percentage Split, Stripe Hatching, Snap to Grid, Sketchy Borders, Scale by Value, Replace with Shape, Arrange Features (with quality presets), and Grid Arrangement. Create thematic maps where geographic shapes communicate data through tile grids, proportional fills, cartogram transforms, hand-drawn styling, force-directed layouts, and grid arrangements. No external dependencies.
@@ -14,7 +14,8 @@ category=Analysis
 icon=resources/icon.png
 experimental=True
 deprecated=False
-changelog=0.5.4 - Snap to Grid edge-following, CRS distortion fix, auto-repair invalid geometries, multipart fix, unify _tessera_part, Arrange Features UI, contributor guide
+changelog=0.5.5 - Fix QgsField compatibility for QGIS < 3.38 (QMetaType.Type fallback to QVariant.Type)
+  0.5.4 - Snap to Grid edge-following, CRS distortion fix, auto-repair invalid geometries, multipart fix, unify _tessera_part, Arrange Features UI, contributor guide
   0.5.3 - Rename Tessellate to Tile Fill, standardize metadata prefix _ts_ to _tessera_
   0.5.2 - Code quality: decompose god methods, extract shared helpers, consolidate test infrastructure
   0.5.1 - Triangle and diamond tile shapes for Tile Fill, quality presets for Arrange Features
