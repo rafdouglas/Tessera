@@ -9,6 +9,9 @@ dist/
 # Test data (fetched by scripts/download_test_data.py)
 test_data/
 
+# Project docs (local only)
+docs/
+
 # Test / IDE
 .pytest_cache/
 *.qmd
@@ -19,6 +22,7 @@ test_data/
 CLAUDE.md
 CLAUDE_prev.md
 AGENTS.md
+Skill.md
 
 # Build / packaging
 assets/
