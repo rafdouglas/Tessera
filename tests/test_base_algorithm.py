@@ -102,9 +102,8 @@ def _run_algorithm(alg, layer):
 # ===========================================================================
 
 def test_concrete_subclass_instantiation(qgis_app):
-    """T5.1: Concrete subclass instantiates; topology_aware=False, crs_strategy='equal_area'."""
+    """T5.1: Concrete subclass instantiates; crs_strategy='equal_area'."""
     alg = ConcreteAlgorithm()
-    assert alg.topology_aware is False
     assert alg.crs_strategy == 'equal_area'
     assert alg.name() == 'test_concrete'
     assert alg.displayName() == 'Test Concrete Algorithm'
@@ -188,13 +187,12 @@ def test_working_crs_created_in_process(qgis_app):
 
 
 # ===========================================================================
-# T5.6 -- topology is None when topology_aware is False
+# T5.6 -- topology is always None (placeholder for future topology support)
 # ===========================================================================
 
 def test_topology_none_when_not_topology_aware(qgis_app):
-    """T5.6: When topology_aware=False, run_algorithm receives topology=None."""
+    """T5.6: run_algorithm receives topology=None (placeholder)."""
     alg = ConcreteAlgorithm()
-    assert alg.topology_aware is False
     layer = _make_polygon_layer()
     _run_algorithm(alg, layer)
 

@@ -82,8 +82,6 @@ def _cell_to_feature_index(row, col, cols, rows, fill_order):
 class GridArrangementAlgorithm(TesseraAlgorithm):
     """Place features in a regular grid layout for small-multiples posters."""
 
-    topology_aware = False
-
     def name(self):
         return 'grid_arrangement'
 

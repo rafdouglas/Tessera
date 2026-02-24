@@ -114,6 +114,9 @@ class TopologyTransformer:
         min_y, max_y = min(all_y), max(all_y)
         extent_w = max_x - min_x
         extent_h = max_y - min_y
+        # Divide extent into ~1000 cells per axis for the spatial hash.
+        # This gives ~1M grid buckets, balancing memory usage against
+        # lookup granularity for T-junction detection.
         cell_size = max(extent_w, extent_h) / 1000.0
         if cell_size < self.SNAP_TOLERANCE:
             cell_size = self.SNAP_TOLERANCE * 1000
@@ -519,23 +522,30 @@ class TopologyTransformer:
         if self._geometry_acceptable(new_geom, original_area):
             return new_geom
 
-        # Try buffer(0)
+        # Repair cascade: try progressively stronger GEOS repair methods.
+        # Each step is wrapped in a bare except because GEOS can raise
+        # unpredictable C++ exceptions (segfault-adjacent) on severely
+        # malformed geometries. Swallowing these is intentional — the
+        # cascade falls through to the next method, and ultimately to
+        # the safe fallback of keeping the original geometry unchanged.
+
+        # Step 1: buffer(0) — fast, fixes most self-intersections
         try:
             repaired = new_geom.buffer(0, 5)
             if not repaired.isNull() and self._geometry_acceptable(repaired, original_area):
                 return repaired
         except Exception:
-            pass
+            pass  # GEOS buffer failed on malformed input; try next method
 
-        # Try makeValid()
+        # Step 2: makeValid() — heavier, handles more complex invalidity
         try:
             repaired = new_geom.makeValid()
             if not repaired.isNull() and self._geometry_acceptable(repaired, original_area):
                 return repaired
         except Exception:
-            pass
+            pass  # GEOS makeValid failed; fall through to original
 
-        # All repair attempts failed — keep original geometry
+        # All repair attempts failed — keep original geometry unchanged
         if self._feedback is not None:
             try:
                 self._feedback.pushWarning(
@@ -543,7 +553,7 @@ class TopologyTransformer:
                     'keeping original geometry'
                 )
             except Exception:
-                pass
+                pass  # feedback itself may be unavailable in edge cases
         return QgsGeometry(original_geom)
 
     def _geometry_acceptable(self, geom, original_area):

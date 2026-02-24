@@ -44,6 +44,11 @@ def needs_antimeridian_split(geometry):
 
     Heuristic: the bounding-box x-range exceeds 180 degrees, or any vertex
     has longitude > 180 (common convention for wrapping past the antimeridian).
+
+    .. note::
+        Reserved for future use. No algorithm currently calls this function,
+        but it is retained for planned antimeridian-aware processing in a
+        future release.
     """
     if geometry.isEmpty():
         return False

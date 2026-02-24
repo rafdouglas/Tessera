@@ -150,8 +150,6 @@ def resolve_grid_edges(ring, spacing, grid_type):
 class SnapToGridAlgorithm(TesseraAlgorithm):
     """Snap feature vertices towards grid points with topology preservation."""
 
-    topology_aware = True
-
     def name(self):
         return 'snap_to_grid'
 

@@ -294,43 +294,10 @@ class TileFillAlgorithm(TesseraAlgorithm):
             )
 
             # Generate grid cells
-            if tile_shape == _SHAPE_CIRCLE:
-                # Use hex grid point layout, then create circles
-                points = generate_point_grid(padded_bbox, feat_cell_size, 'hexagonal')
-                radius = feat_cell_size * _CIRCLE_RADIUS_FACTOR
-
-                if circle_crs_choice == _CIRCLE_CRS_EQUAL_AREA:
-                    cells = [
-                        (pt, regular_polygon(pt, radius, _CIRCLE_SEGMENTS, 0))
-                        for pt in points
-                    ]
-                else:
-                    target_crs = (
-                        context.project().crs()
-                        if circle_crs_choice == _CIRCLE_CRS_PROJECT
-                        else source.sourceCrs()
-                    )
-                    to_target = QgsCoordinateTransform(
-                        working_crs.working_crs, target_crs, context.project()
-                    )
-                    from_target = QgsCoordinateTransform(
-                        target_crs, working_crs.working_crs, context.project()
-                    )
-                    cells = []
-                    for pt in points:
-                        tgt_center = to_target.transform(pt)
-                        east_pt = QgsPointXY(pt.x() + radius, pt.y())
-                        tgt_east = to_target.transform(east_pt)
-                        tgt_radius = abs(tgt_east.x() - tgt_center.x())
-                        circle = regular_polygon(
-                            QgsPointXY(tgt_center.x(), tgt_center.y()),
-                            tgt_radius, _CIRCLE_SEGMENTS, 0,
-                        )
-                        circle.transform(from_target)
-                        cells.append((pt, circle))
-            else:
-                # hex or square: use generate_cell_polygons
-                cells = generate_cell_polygons(padded_bbox, feat_cell_size, grid_type)
+            cells = self._generate_cells(
+                tile_shape, padded_bbox, feat_cell_size, grid_type,
+                circle_crs_choice, working_crs, source, context,
+            )
 
             # Process each cell: clip or centroid-filter
             raw_tiles = []  # list of (center_point, tile_geometry)
@@ -373,65 +340,13 @@ class TileFillAlgorithm(TesseraAlgorithm):
                 if feedback.isCanceled():
                     break
 
-                if has_percent and fraction is not None:
-                    if tile_index < filled_count:
-                        # Fully filled tile
-                        out_geom = working_crs.inverse(tile_geom)
-                        out_feat = build_feature(
-                            out_geom, feature, 'tile_fill',
-                            {'_tessera_tile_index': tile_index,
-                             '_tessera_part': 'filled'},
-                            output_fields,
-                        )
-                        batch.append(out_feat)
-                        total_output += 1
-                    elif tile_index == filled_count and leftover > 0.0:
-                        # Boundary tile: split into filled + remainder
-                        filled_geom, remainder_geom = split_polygon_by_fraction(
-                            tile_geom, leftover, 'horizontal')
-
-                        if not filled_geom.isEmpty():
-                            out_filled = working_crs.inverse(filled_geom)
-                            out_feat = build_feature(
-                                out_filled, feature, 'tile_fill',
-                                {'_tessera_tile_index': tile_index,
-                                 '_tessera_part': 'filled'},
-                                output_fields,
-                            )
-                            batch.append(out_feat)
-                            total_output += 1
-
-                        if not remainder_geom.isEmpty():
-                            out_rem = working_crs.inverse(remainder_geom)
-                            out_feat = build_feature(
-                                out_rem, feature, 'tile_fill',
-                                {'_tessera_tile_index': tile_index,
-                                 '_tessera_part': 'remainder'},
-                                output_fields,
-                            )
-                            batch.append(out_feat)
-                            total_output += 1
-                    else:
-                        # Remainder tile
-                        out_geom = working_crs.inverse(tile_geom)
-                        out_feat = build_feature(
-                            out_geom, feature, 'tile_fill',
-                            {'_tessera_tile_index': tile_index,
-                             '_tessera_part': 'remainder'},
-                            output_fields,
-                        )
-                        batch.append(out_feat)
-                        total_output += 1
-                else:
-                    # No percentage field — original behavior
-                    out_geom = working_crs.inverse(tile_geom)
-                    out_feat = build_feature(
-                        out_geom, feature, 'tile_fill',
-                        {'_tessera_tile_index': tile_index},
-                        output_fields,
-                    )
-                    batch.append(out_feat)
-                    total_output += 1
+                new_feats = self._emit_tile(
+                    tile_geom, tile_index, feature, working_crs,
+                    output_fields, has_percent, fraction,
+                    filled_count, leftover,
+                )
+                batch.extend(new_feats)
+                total_output += len(new_feats)
 
                 # Batch write
                 if len(batch) >= BATCH_SIZE:
@@ -453,3 +368,102 @@ class TileFillAlgorithm(TesseraAlgorithm):
                 f'exceeding the 50,000 warning threshold. '
                 f'Consider using a larger cell size.'
             )
+
+    @staticmethod
+    def _generate_cells(tile_shape, padded_bbox, cell_size, grid_type,
+                        circle_crs_choice, working_crs, source, context):
+        """Generate grid cells for one feature's bounding box.
+
+        Returns list of (center_point, polygon_geometry) tuples.
+        """
+        if tile_shape != _SHAPE_CIRCLE:
+            return generate_cell_polygons(padded_bbox, cell_size, grid_type)
+
+        # Circle tiles: hex grid point layout with circle geometries
+        points = generate_point_grid(padded_bbox, cell_size, 'hexagonal')
+        radius = cell_size * _CIRCLE_RADIUS_FACTOR
+
+        if circle_crs_choice == _CIRCLE_CRS_EQUAL_AREA:
+            return [
+                (pt, regular_polygon(pt, radius, _CIRCLE_SEGMENTS, 0))
+                for pt in points
+            ]
+
+        # Build circles in target CRS for visual roundness
+        target_crs = (
+            context.project().crs()
+            if circle_crs_choice == _CIRCLE_CRS_PROJECT
+            else source.sourceCrs()
+        )
+        to_target = QgsCoordinateTransform(
+            working_crs.working_crs, target_crs, context.project()
+        )
+        from_target = QgsCoordinateTransform(
+            target_crs, working_crs.working_crs, context.project()
+        )
+        cells = []
+        for pt in points:
+            tgt_center = to_target.transform(pt)
+            east_pt = QgsPointXY(pt.x() + radius, pt.y())
+            tgt_east = to_target.transform(east_pt)
+            tgt_radius = abs(tgt_east.x() - tgt_center.x())
+            circle = regular_polygon(
+                QgsPointXY(tgt_center.x(), tgt_center.y()),
+                tgt_radius, _CIRCLE_SEGMENTS, 0,
+            )
+            circle.transform(from_target)
+            cells.append((pt, circle))
+        return cells
+
+    @staticmethod
+    def _emit_tile(tile_geom, tile_index, feature, working_crs,
+                   output_fields, has_percent, fraction,
+                   filled_count, leftover):
+        """Build output feature(s) for a single tile.
+
+        Returns a list of QgsFeature (1 without percentage, up to 2 with).
+        """
+        if not has_percent or fraction is None:
+            out_geom = working_crs.inverse(tile_geom)
+            return [build_feature(
+                out_geom, feature, 'tile_fill',
+                {'_tessera_tile_index': tile_index},
+                output_fields,
+            )]
+
+        results = []
+        if tile_index < filled_count:
+            out_geom = working_crs.inverse(tile_geom)
+            results.append(build_feature(
+                out_geom, feature, 'tile_fill',
+                {'_tessera_tile_index': tile_index,
+                 '_tessera_part': 'filled'},
+                output_fields,
+            ))
+        elif tile_index == filled_count and leftover > 0.0:
+            # Boundary tile: split into filled + remainder
+            filled_geom, remainder_geom = split_polygon_by_fraction(
+                tile_geom, leftover, 'horizontal')
+            if not filled_geom.isEmpty():
+                results.append(build_feature(
+                    working_crs.inverse(filled_geom), feature, 'tile_fill',
+                    {'_tessera_tile_index': tile_index,
+                     '_tessera_part': 'filled'},
+                    output_fields,
+                ))
+            if not remainder_geom.isEmpty():
+                results.append(build_feature(
+                    working_crs.inverse(remainder_geom), feature, 'tile_fill',
+                    {'_tessera_tile_index': tile_index,
+                     '_tessera_part': 'remainder'},
+                    output_fields,
+                ))
+        else:
+            out_geom = working_crs.inverse(tile_geom)
+            results.append(build_feature(
+                out_geom, feature, 'tile_fill',
+                {'_tessera_tile_index': tile_index,
+                 '_tessera_part': 'remainder'},
+                output_fields,
+            ))
+        return results

@@ -17,7 +17,7 @@ REF_FIXED = 2
 
 
 def compute_scale_factor(value, ref_value, scale_method,
-                         min_scale=0.0, max_scale=10.0):
+                         min_scale=0.01, max_scale=10.0):
     """Compute area scale factor for a feature value.
 
     Args:
@@ -25,7 +25,8 @@ def compute_scale_factor(value, ref_value, scale_method,
         ref_value: Reference value R (positive, non-zero).
         scale_method: METHOD_PROPORTIONAL_AREA, METHOD_PROPORTIONAL_SQRT,
             or METHOD_PROPORTIONAL_LOG.
-        min_scale: Minimum allowed scale factor.
+        min_scale: Minimum allowed scale factor (default 0.01; values
+            below ~0.01 collapse geometry to sub-pixel size).
         max_scale: Maximum allowed scale factor.
 
     Returns:

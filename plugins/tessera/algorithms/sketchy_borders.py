@@ -43,7 +43,12 @@ def vertex_hash(vertex_id, seed, component):
     float
         Value in (0, 1].
     """
+    # Knuth multiplicative hash constants (golden-ratio-derived primes)
+    # 2654435761 = floor(2^32 / phi), 2246822519 and 3266489917 are large
+    # primes chosen for good bit mixing across the three input components.
     h = vertex_id * 2654435761 + seed * 2246822519 + component * 3266489917
+    # Finalizer: two rounds of xorshift-multiply (Murmur3-style) to
+    # distribute entropy from the upper bits into the lower bits.
     h = ((h >> 16) ^ h) * 0x45d9f3b
     h = ((h >> 16) ^ h) * 0x45d9f3b
     h = (h >> 16) ^ h
@@ -99,8 +104,6 @@ class SketchyBordersAlgorithm(TesseraAlgorithm):
     Topology-aware: shared boundaries receive identical jitter so that
     adjacent polygons remain seamlessly connected.
     """
-
-    topology_aware = True
 
     def name(self):
         return 'sketchy_borders'

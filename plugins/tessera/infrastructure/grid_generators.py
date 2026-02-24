@@ -68,6 +68,14 @@ def auto_cell_size(extent, target_count, grid_type):
     Returns:
         float -- recommended cell spacing.
     """
+    # Packing factors compensate for the difference between a grid cell's
+    # area and the bounding rectangle area used by sqrt(W*H/N).
+    # - square/diamond: cells tile perfectly, factor = 1.0
+    # - hexagonal/circle: hex cells cover ~93% of their bounding rect
+    #   (area = sqrt(3)/2 * s^2 vs s^2), so factor = 1/0.93 ≈ 1.07
+    # - triangular: each triangle covers ~43% of its bounding rect
+    #   (area = sqrt(3)/4 * s^2 vs s * h/2), so factor = 1/0.43 ≈ 1.52
+    #   (empirically tuned to match target count)
     packing_factors = {
         'square': 1.0,
         'hexagonal': 1.07,

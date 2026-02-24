@@ -23,11 +23,9 @@ class TesseraAlgorithm(QgsProcessingAlgorithm):
         - get_output_fields(source) to add _tessera_* columns beyond source fields.
 
     Class attributes:
-        topology_aware (bool): Whether the algorithm needs topology (Phase 3).
         crs_strategy (str): CRS selection strategy passed to WorkingCRS.
     """
 
-    topology_aware = False
     crs_strategy = 'equal_area'
 
     def output_layer_name(self):
