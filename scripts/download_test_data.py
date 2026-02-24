@@ -1,11 +1,9 @@
 #!/usr/bin/env python3
 """Download Natural Earth 110m Admin 0 Countries test dataset."""
 
-import os
 import sys
 import urllib.request
 import zipfile
-import shutil
 from pathlib import Path
 
 

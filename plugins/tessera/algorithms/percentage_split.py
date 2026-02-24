@@ -9,13 +9,9 @@ from qgis.core import (
 from PyQt5.QtCore import QMetaType, QVariant
 
 from ..infrastructure.geometry_helpers import extract_polygons, split_polygon_by_fraction
-from ..infrastructure.feature_builder import create_output_fields, build_feature
-from ..infrastructure.percent_helpers import detect_divisor, value_to_fraction
+from ..infrastructure.feature_builder import create_output_fields, build_feature, BATCH_SIZE
+from ..infrastructure.percent_helpers import detect_divisor, value_to_fraction, VALUE_RANGE_OPTIONS
 from .base_algorithm import TesseraAlgorithm
-
-_BATCH_SIZE = 1000
-
-_VALUE_RANGE_OPTIONS = ['0 - 100', '0 - 1', 'Auto scale']
 _ORIENTATION_OPTIONS = ['horizontal', 'vertical', 'diagonal_45', 'diagonal_135', 'radial']
 _ORIENTATION_DISPLAY = ['Horizontal', 'Vertical', 'Diagonal 45\u00b0', 'Diagonal 135\u00b0', 'Radial']
 
@@ -127,7 +123,7 @@ class PercentageSplitAlgorithm(TesseraAlgorithm):
             QgsProcessingParameterEnum(
                 'VALUE_RANGE',
                 'Value range',
-                options=_VALUE_RANGE_OPTIONS,
+                options=VALUE_RANGE_OPTIONS,
                 defaultValue=0,
             )
         )
@@ -281,7 +277,7 @@ class PercentageSplitAlgorithm(TesseraAlgorithm):
                     batch.append(out_feat)
 
             # Batch write
-            if len(batch) >= _BATCH_SIZE:
+            if len(batch) >= BATCH_SIZE:
                 sink.addFeatures(batch)
                 batch = []
 

@@ -1,7 +1,7 @@
 #!/usr/bin/env python3
 """Package Tessera plugins for distribution.
 
-1. Copy lib/tessera_common/*.py into each standalone plugin's infrastructure/ folder
+1. Copy lib/ideogis_common/*.py into each standalone plugin's infrastructure/ folder
 2. For the main plugin, resolve symlinks to actual file copies
 3. ZIP each plugin directory for QGIS plugin manager upload
 
@@ -20,7 +20,7 @@ def vendor_shared_lib(lib_dir: Path, target_dir: Path) -> None:
     """Copy shared library files into target infrastructure directory.
 
     Args:
-        lib_dir: Path to lib/tessera_common/
+        lib_dir: Path to lib/ideogis_common/
         target_dir: Path to plugin's infrastructure/ directory
     """
     if not lib_dir.exists():
@@ -30,7 +30,7 @@ def vendor_shared_lib(lib_dir: Path, target_dir: Path) -> None:
         raise FileNotFoundError(f"Target directory not found: {target_dir}")
 
     # Copy all Python files from shared lib
-    shared_files = ["__init__.py", "crs_manager.py", "feature_builder.py", "geometry_helpers.py"]
+    shared_files = ["__init__.py", "crs_manager.py", "feature_builder.py", "geometry_helpers.py", "scale_helpers.py"]
 
     for filename in shared_files:
         source_file = lib_dir / filename
@@ -98,7 +98,7 @@ def package_standalone_plugin(plugin_dir: Path, lib_dir: Path, output_dir: Path,
 
     Args:
         plugin_dir: Path to plugin directory
-        lib_dir: Path to lib/tessera_common/
+        lib_dir: Path to lib/ideogis_common/
         output_dir: Output directory for ZIP files
         license_file: Path to LICENSE file to include
     """

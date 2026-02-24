@@ -15,7 +15,6 @@ from qgis.core import (
 from PyQt5.QtCore import QMetaType
 
 from ..infrastructure.grid_generators import (
-    nearest_grid_point,
     nearest_grid_vertex,
     grid_edge_length,
     trace_grid_path,

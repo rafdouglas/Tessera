@@ -5,16 +5,12 @@ from qgis.core import (
     QgsGeometry,
     QgsPointXY,
     QgsProcessingParameterNumber,
-    QgsRectangle,
-    QgsWkbTypes,
 )
 from PyQt5.QtCore import QMetaType
 
 from ..infrastructure.geometry_helpers import extract_polygons
-from ..infrastructure.feature_builder import create_output_fields, build_feature
+from ..infrastructure.feature_builder import create_output_fields, build_feature, BATCH_SIZE
 from .base_algorithm import TesseraAlgorithm
-
-_BATCH_SIZE = 1000
 _SNAP_TOLERANCE = 0.1  # degrees -- angles within this of 0/90/180 snap exactly
 
 
@@ -254,7 +250,7 @@ class StripeHatchingAlgorithm(TesseraAlgorithm):
                 )
                 batch.append(out_feat)
 
-                if len(batch) >= _BATCH_SIZE:
+                if len(batch) >= BATCH_SIZE:
                     sink.addFeatures(batch)
                     batch = []
 

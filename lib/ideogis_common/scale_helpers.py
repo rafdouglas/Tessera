@@ -1,6 +1,8 @@
 """Shared scale computation helpers for Scale by Value and Replace with Shape."""
 import math
 
+from PyQt5.QtCore import QVariant
+
 from .geometry_helpers import clamp
 
 # Scale method enum indices (shared across algorithms)
@@ -89,3 +91,48 @@ def compute_reference(source, value_field, reference_type, fixed_reference,
     if reference_type == REF_MAX_VALUE:
         return max_val
     return total / count
+
+
+def validate_scale_value(feature, value_field, feedback):
+    """Validate a feature's scale value, emitting warnings for invalid data.
+
+    Args:
+        feature: QgsFeature to read the value from.
+        value_field: Name of the numeric attribute field.
+        feedback: QgsProcessingFeedback for warnings/errors.
+
+    Returns:
+        float value if valid, or None if the value should be skipped.
+    """
+    raw_value = feature.attribute(value_field)
+    if raw_value is None or raw_value == QVariant():
+        feedback.pushWarning(
+            f'Feature {feature.id()}: NULL value in field '
+            f'"{value_field}", skipping.'
+        )
+        return None
+
+    try:
+        value = float(raw_value)
+    except (TypeError, ValueError):
+        feedback.pushWarning(
+            f'Feature {feature.id()}: non-numeric value '
+            f'"{raw_value}" in field "{value_field}", skipping.'
+        )
+        return None
+
+    if value < 0:
+        feedback.reportError(
+            f'Feature {feature.id()}: negative value {value} '
+            f'in field "{value_field}". Negative values are not supported.'
+        )
+        return None
+
+    if value == 0:
+        feedback.pushWarning(
+            f'Feature {feature.id()}: zero value in field '
+            f'"{value_field}", skipping.'
+        )
+        return None
+
+    return value

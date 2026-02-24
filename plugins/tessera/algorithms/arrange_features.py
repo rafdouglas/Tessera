@@ -11,9 +11,6 @@ import math
 from collections import defaultdict
 
 from qgis.core import (
-    QgsCoordinateReferenceSystem,
-    QgsFeature,
-    QgsFields,
     QgsGeometry,
     QgsProcessingParameterBoolean,
     QgsProcessingParameterDefinition,
@@ -53,6 +50,55 @@ _QUALITY_PRESETS = {
 _GENTLE_PUSH_FACTOR = 0.3
 _MAX_REFINEMENT_ITERATIONS = 200
 _BRUTE_FORCE_THRESHOLD = 200
+
+
+def _build_spatial_grid(geometries, cell_size, offsets=None):
+    """Build spatial hash grid from geometry bounding box centroids.
+
+    Args:
+        geometries: List of QgsGeometry objects.
+        cell_size: Grid cell size.
+        offsets: Optional list of [dx, dy] displacement offsets per geometry.
+                 Required for methods that use work_geoms + total_displacements.
+    """
+    grid = defaultdict(list)
+    for i, geom in enumerate(geometries):
+        bbox = geom.boundingBox()
+        cx = (bbox.xMinimum() + bbox.xMaximum()) / 2.0
+        cy = (bbox.yMinimum() + bbox.yMaximum()) / 2.0
+        if offsets is not None:
+            cx += offsets[i][0]
+            cy += offsets[i][1]
+        grid[(int(cx // cell_size), int(cy // cell_size))].append(i)
+    return grid
+
+
+def _iter_nearby_pairs(grid):
+    """Yield unique (i, j) pairs from neighboring grid cells."""
+    visited = set()
+    for (gx, gy), indices in grid.items():
+        neighbors = []
+        for dx_off in (-1, 0, 1):
+            for dy_off in (-1, 0, 1):
+                key = (gx + dx_off, gy + dy_off)
+                if key in grid:
+                    neighbors.extend(grid[key])
+        for i in indices:
+            for j in neighbors:
+                if i < j and (i, j) not in visited:
+                    visited.add((i, j))
+                    yield i, j
+
+
+def _max_geom_extent(geometries):
+    """Return max bounding box dimension across all geometries."""
+    max_extent = 0.0
+    for geom in geometries:
+        bbox = geom.boundingBox()
+        extent = max(bbox.width(), bbox.height())
+        if extent > max_extent:
+            max_extent = extent
+    return max_extent
 
 
 class ArrangeFeaturesAlgorithm(TesseraAlgorithm):
@@ -669,7 +715,7 @@ class ArrangeFeaturesAlgorithm(TesseraAlgorithm):
 
     @staticmethod
     def _refine_in_source_crs(out_geoms, max_iterations, feedback):
-        """Brute-force refinement pass in source CRS.
+        """Spatial-indexed refinement pass in source CRS.
 
         The equal-area CRS round-trip can reintroduce overlaps. This pass
         resolves residuals directly on the output geometries.
@@ -682,6 +728,10 @@ class ArrangeFeaturesAlgorithm(TesseraAlgorithm):
         n = len(out_geoms)
         max_refine = max_iterations // 2
         refine_iter = 0
+        cell_size = _max_geom_extent(out_geoms)
+        if cell_size <= 0:
+            cell_size = 1.0
+
         for refine_iter in range(max_refine):
             if feedback.isCanceled():
                 return None
@@ -689,41 +739,41 @@ class ArrangeFeaturesAlgorithm(TesseraAlgorithm):
             displacements = [[0.0, 0.0] for _ in range(n)]
             overlap_counts = [0] * n
 
-            for i in range(n):
-                for j in range(i + 1, n):
-                    gi = out_geoms[i]
-                    gj = out_geoms[j]
-                    if not gi.boundingBox().intersects(gj.boundingBox()):
-                        continue
-                    if not gi.intersects(gj):
-                        continue
-                    inter = gi.intersection(gj)
-                    if inter.isEmpty():
-                        continue
-                    ia = inter.area()
-                    if ia <= 0:
-                        continue
+            grid = _build_spatial_grid(out_geoms, cell_size)
+            for i, j in _iter_nearby_pairs(grid):
+                gi = out_geoms[i]
+                gj = out_geoms[j]
+                if not gi.boundingBox().intersects(gj.boundingBox()):
+                    continue
+                if not gi.intersects(gj):
+                    continue
+                inter = gi.intersection(gj)
+                if inter.isEmpty():
+                    continue
+                ia = inter.area()
+                if ia <= 0:
+                    continue
 
-                    ci = gi.centroid().asPoint()
-                    cj = gj.centroid().asPoint()
-                    dx = cj.x() - ci.x()
-                    dy = cj.y() - ci.y()
-                    dist = math.hypot(dx, dy)
-                    if dist > 0:
-                        dir_x = dx / dist
-                        dir_y = dy / dist
-                    else:
-                        dir_x = 1.0
-                        dir_y = 0.0
+                ci = gi.centroid().asPoint()
+                cj = gj.centroid().asPoint()
+                dx = cj.x() - ci.x()
+                dy = cj.y() - ci.y()
+                dist = math.hypot(dx, dy)
+                if dist > 0:
+                    dir_x = dx / dist
+                    dir_y = dy / dist
+                else:
+                    dir_x = 1.0
+                    dir_y = 0.0
 
-                    push = math.sqrt(ia)
-                    displacements[i][0] -= dir_x * push
-                    displacements[i][1] -= dir_y * push
-                    displacements[j][0] += dir_x * push
-                    displacements[j][1] += dir_y * push
-                    overlap_counts[i] += 1
-                    overlap_counts[j] += 1
-                    any_refine = True
+                push = math.sqrt(ia)
+                displacements[i][0] -= dir_x * push
+                displacements[i][1] -= dir_y * push
+                displacements[j][0] += dir_x * push
+                displacements[j][1] += dir_y * push
+                overlap_counts[i] += 1
+                overlap_counts[j] += 1
+                any_refine = True
 
             if not any_refine:
                 break
@@ -742,13 +792,19 @@ class ArrangeFeaturesAlgorithm(TesseraAlgorithm):
     def _count_source_crs_overlaps(out_geoms):
         """Count remaining overlaps among output geometries in source CRS."""
         n = len(out_geoms)
+        if n == 0:
+            return 0
+        cell_size = _max_geom_extent(out_geoms)
+        if cell_size <= 0:
+            cell_size = 1.0
+
         remaining = 0
-        for i in range(n):
-            for j in range(i + 1, n):
-                if out_geoms[i].intersects(out_geoms[j]):
-                    inter = out_geoms[i].intersection(out_geoms[j])
-                    if not inter.isEmpty() and inter.area() > 0:
-                        remaining += 1
+        grid = _build_spatial_grid(out_geoms, cell_size)
+        for i, j in _iter_nearby_pairs(grid):
+            if out_geoms[i].intersects(out_geoms[j]):
+                inter = out_geoms[i].intersection(out_geoms[j])
+                if not inter.isEmpty() and inter.area() > 0:
+                    remaining += 1
         return remaining
 
     # ------------------------------------------------------------------
@@ -786,11 +842,14 @@ class ArrangeFeaturesAlgorithm(TesseraAlgorithm):
         force_config = self._configure_force_layout(
             radii, work_geoms, mode, separation_distance,
             convergence_threshold)
+        force_config['max_iterations'] = max_iterations
+        force_config['damping'] = damping
+        force_config['anchor_strength'] = anchor_strength
+        force_config['adaptive_damping'] = adaptive_damping
 
         final_iteration = self._iterate_force_directed_loop(
             n, centroids, original_centroids, radii, work_geoms,
-            total_displacements, force_config, max_iterations,
-            damping, anchor_strength, adaptive_damping, feedback)
+            total_displacements, force_config, feedback)
         if final_iteration is None:
             return  # canceled
 
@@ -928,9 +987,7 @@ class ArrangeFeaturesAlgorithm(TesseraAlgorithm):
 
     def _iterate_force_directed_loop(self, n, centroids, original_centroids,
                                      radii, work_geoms, total_displacements,
-                                     config, max_iterations, damping,
-                                     anchor_strength, adaptive_damping,
-                                     feedback):
+                                     config, feedback):
         """Run the iterative force-directed simulation loop.
 
         Returns
@@ -938,6 +995,10 @@ class ArrangeFeaturesAlgorithm(TesseraAlgorithm):
         int or None
             Final iteration count, or None if canceled.
         """
+        max_iterations = config['max_iterations']
+        damping = config['damping']
+        anchor_strength = config['anchor_strength']
+        adaptive_damping = config['adaptive_damping']
         convergence_limit = config['convergence_limit']
         max_radius = config['max_radius']
         max_half_diag = config['max_half_diag']
@@ -1101,9 +1162,56 @@ class ArrangeFeaturesAlgorithm(TesseraAlgorithm):
         For other modes, counts pairs that actually intersect with
         non-zero area (shared edges/points are not counted).
         """
+        if n == 0:
+            return 0
+        cell_size = _max_geom_extent(work_geoms) + gap
+        if cell_size <= 0:
+            cell_size = 1.0
+
         remaining = 0
-        for i in range(n):
-            for j in range(i + 1, n):
+        grid = _build_spatial_grid(work_geoms, cell_size,
+                                   offsets=total_displacements)
+        for i, j in _iter_nearby_pairs(grid):
+            gi = QgsGeometry(work_geoms[i])
+            gi.translate(total_displacements[i][0],
+                         total_displacements[i][1])
+            gj = QgsGeometry(work_geoms[j])
+            gj.translate(total_displacements[j][0],
+                         total_displacements[j][1])
+
+            if gap > 0:
+                if gi.distance(gj) < gap:
+                    remaining += 1
+            else:
+                if gi.intersects(gj):
+                    inter = gi.intersection(gj)
+                    if not inter.isEmpty() and inter.area() > 0:
+                        remaining += 1
+        return remaining
+
+    @staticmethod
+    def _refine_gap(work_geoms, total_displacements, centroids,
+                    separation_distance, n, feedback):
+        """Spatial-indexed gap refinement pass.
+
+        After force-directed convergence (using MEC, no gap), measure
+        actual boundary distances and push pairs apart until they
+        achieve the requested separation_distance.
+        """
+        cell_size = _max_geom_extent(work_geoms) + separation_distance
+        if cell_size <= 0:
+            cell_size = 1.0
+
+        max_refinement_iterations = _MAX_REFINEMENT_ITERATIONS
+        for _refine_iter in range(max_refinement_iterations):
+            if feedback.isCanceled():
+                return
+
+            max_correction = 0.0
+            grid = _build_spatial_grid(work_geoms, cell_size,
+                                       offsets=total_displacements)
+            for i, j in _iter_nearby_pairs(grid):
+                # Build translated geometries
                 gi = QgsGeometry(work_geoms[i])
                 gi.translate(total_displacements[i][0],
                              total_displacements[i][1])
@@ -1111,71 +1219,36 @@ class ArrangeFeaturesAlgorithm(TesseraAlgorithm):
                 gj.translate(total_displacements[j][0],
                              total_displacements[j][1])
 
-                if gap > 0:
-                    if gi.distance(gj) < gap:
-                        remaining += 1
+                actual_dist = gi.distance(gj)
+                deficit = separation_distance - actual_dist
+
+                if deficit <= 0:
+                    continue
+
+                # Push apart along centroid-to-centroid direction
+                dx = centroids[j][0] - centroids[i][0]
+                dy = centroids[j][1] - centroids[i][1]
+                dist = math.hypot(dx, dy)
+                if dist > 0:
+                    dir_x = dx / dist
+                    dir_y = dy / dist
                 else:
-                    if gi.intersects(gj):
-                        inter = gi.intersection(gj)
-                        if not inter.isEmpty() and inter.area() > 0:
-                            remaining += 1
-        return remaining
+                    dir_x = 1.0
+                    dir_y = 0.0
 
-    @staticmethod
-    def _refine_gap(work_geoms, total_displacements, centroids,
-                    separation_distance, n, feedback):
-        """Geometry-based gap refinement pass.
+                push = deficit / 2.0
+                total_displacements[i][0] -= dir_x * push
+                total_displacements[i][1] -= dir_y * push
+                total_displacements[j][0] += dir_x * push
+                total_displacements[j][1] += dir_y * push
 
-        After force-directed convergence (using MEC, no gap), measure
-        actual boundary distances and push pairs apart until they
-        achieve the requested separation_distance.
-        """
-        max_refinement_iterations = _MAX_REFINEMENT_ITERATIONS
-        for _refine_iter in range(max_refinement_iterations):
-            if feedback.isCanceled():
-                return
+                centroids[i][0] -= dir_x * push
+                centroids[i][1] -= dir_y * push
+                centroids[j][0] += dir_x * push
+                centroids[j][1] += dir_y * push
 
-            max_correction = 0.0
-            for i in range(n):
-                for j in range(i + 1, n):
-                    # Build translated geometries
-                    gi = QgsGeometry(work_geoms[i])
-                    gi.translate(total_displacements[i][0],
-                                 total_displacements[i][1])
-                    gj = QgsGeometry(work_geoms[j])
-                    gj.translate(total_displacements[j][0],
-                                 total_displacements[j][1])
-
-                    actual_dist = gi.distance(gj)
-                    deficit = separation_distance - actual_dist
-
-                    if deficit <= 0:
-                        continue
-
-                    # Push apart along centroid-to-centroid direction
-                    dx = centroids[j][0] - centroids[i][0]
-                    dy = centroids[j][1] - centroids[i][1]
-                    dist = math.hypot(dx, dy)
-                    if dist > 0:
-                        dir_x = dx / dist
-                        dir_y = dy / dist
-                    else:
-                        dir_x = 1.0
-                        dir_y = 0.0
-
-                    push = deficit / 2.0
-                    total_displacements[i][0] -= dir_x * push
-                    total_displacements[i][1] -= dir_y * push
-                    total_displacements[j][0] += dir_x * push
-                    total_displacements[j][1] += dir_y * push
-
-                    centroids[i][0] -= dir_x * push
-                    centroids[i][1] -= dir_y * push
-                    centroids[j][0] += dir_x * push
-                    centroids[j][1] += dir_y * push
-
-                    if deficit > max_correction:
-                        max_correction = deficit
+                if deficit > max_correction:
+                    max_correction = deficit
 
             if max_correction < separation_distance * 0.05:
                 break
@@ -1183,13 +1256,17 @@ class ArrangeFeaturesAlgorithm(TesseraAlgorithm):
     @staticmethod
     def _refine_overlaps(work_geoms, total_displacements, centroids,
                          n, feedback):
-        """Geometry-based overlap refinement for separate mode.
+        """Spatial-indexed overlap refinement for separate mode.
 
         After the force loop converges using area-equivalent radii,
         check actual polygon boundaries for remaining overlaps using
-        QgsGeometry.distance() and push apart any pairs that still
+        QgsGeometry.intersects() and push apart any pairs that still
         intersect.
         """
+        cell_size = _max_geom_extent(work_geoms)
+        if cell_size <= 0:
+            cell_size = 1.0
+
         max_refinement_iterations = _MAX_REFINEMENT_ITERATIONS
         for _refine_iter in range(max_refinement_iterations):
             if feedback.isCanceled():
@@ -1197,58 +1274,59 @@ class ArrangeFeaturesAlgorithm(TesseraAlgorithm):
 
             max_correction = 0.0
             any_overlap = False
-            for i in range(n):
-                for j in range(i + 1, n):
-                    gi = QgsGeometry(work_geoms[i])
-                    gi.translate(total_displacements[i][0],
-                                 total_displacements[i][1])
-                    gj = QgsGeometry(work_geoms[j])
-                    gj.translate(total_displacements[j][0],
-                                 total_displacements[j][1])
+            grid = _build_spatial_grid(work_geoms, cell_size,
+                                       offsets=total_displacements)
+            for i, j in _iter_nearby_pairs(grid):
+                gi = QgsGeometry(work_geoms[i])
+                gi.translate(total_displacements[i][0],
+                             total_displacements[i][1])
+                gj = QgsGeometry(work_geoms[j])
+                gj.translate(total_displacements[j][0],
+                             total_displacements[j][1])
 
-                    if not gi.intersects(gj):
-                        continue
+                if not gi.intersects(gj):
+                    continue
 
-                    any_overlap = True
-                    # Compute overlap depth: use distance between boundaries
-                    # When intersecting, distance() returns 0, so we need
-                    # to estimate penetration depth from intersection area
-                    intersection = gi.intersection(gj)
-                    if intersection.isEmpty():
-                        continue
+                any_overlap = True
+                # Compute overlap depth: use distance between boundaries
+                # When intersecting, distance() returns 0, so we need
+                # to estimate penetration depth from intersection area
+                intersection = gi.intersection(gj)
+                if intersection.isEmpty():
+                    continue
 
-                    # Estimate penetration from intersection area.
-                    # sqrt(area) gives a characteristic length proportional to
-                    # overlap severity, robust to long-thin sliver intersections.
-                    inter_area = intersection.area()
-                    if inter_area <= 0:
-                        continue
-                    penetration = math.sqrt(inter_area)
+                # Estimate penetration from intersection area.
+                # sqrt(area) gives a characteristic length proportional to
+                # overlap severity, robust to long-thin sliver intersections.
+                inter_area = intersection.area()
+                if inter_area <= 0:
+                    continue
+                penetration = math.sqrt(inter_area)
 
-                    # Push apart along centroid-to-centroid direction
-                    dx = centroids[j][0] - centroids[i][0]
-                    dy = centroids[j][1] - centroids[i][1]
-                    dist = math.hypot(dx, dy)
-                    if dist > 0:
-                        dir_x = dx / dist
-                        dir_y = dy / dist
-                    else:
-                        dir_x = 1.0
-                        dir_y = 0.0
+                # Push apart along centroid-to-centroid direction
+                dx = centroids[j][0] - centroids[i][0]
+                dy = centroids[j][1] - centroids[i][1]
+                dist = math.hypot(dx, dy)
+                if dist > 0:
+                    dir_x = dx / dist
+                    dir_y = dy / dist
+                else:
+                    dir_x = 1.0
+                    dir_y = 0.0
 
-                    push = penetration * _GENTLE_PUSH_FACTOR
-                    total_displacements[i][0] -= dir_x * push
-                    total_displacements[i][1] -= dir_y * push
-                    total_displacements[j][0] += dir_x * push
-                    total_displacements[j][1] += dir_y * push
+                push = penetration * _GENTLE_PUSH_FACTOR
+                total_displacements[i][0] -= dir_x * push
+                total_displacements[i][1] -= dir_y * push
+                total_displacements[j][0] += dir_x * push
+                total_displacements[j][1] += dir_y * push
 
-                    centroids[i][0] -= dir_x * push
-                    centroids[i][1] -= dir_y * push
-                    centroids[j][0] += dir_x * push
-                    centroids[j][1] += dir_y * push
+                centroids[i][0] -= dir_x * push
+                centroids[i][1] -= dir_y * push
+                centroids[j][0] += dir_x * push
+                centroids[j][1] += dir_y * push
 
-                    if penetration > max_correction:
-                        max_correction = penetration
+                if penetration > max_correction:
+                    max_correction = penetration
 
             if not any_overlap:
                 break

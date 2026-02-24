@@ -2,6 +2,9 @@
 from PyQt5.QtCore import QMetaType, QVariant
 from qgis.core import QgsFeature, QgsField, QgsFields, QgsGeometry
 
+# --- Shared constants ---
+BATCH_SIZE = 1000
+
 _METATYPE_TO_VARIANT = {
     QMetaType.Type.QString: QVariant.String,
     QMetaType.Type.Int: QVariant.Int,

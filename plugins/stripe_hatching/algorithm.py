@@ -9,7 +9,6 @@ from qgis.core import (
     QgsProcessingParameterFeatureSink,
     QgsProcessingParameterFeatureSource,
     QgsProcessingParameterNumber,
-    QgsRectangle,
     QgsWkbTypes,
 )
 from PyQt5.QtCore import QMetaType

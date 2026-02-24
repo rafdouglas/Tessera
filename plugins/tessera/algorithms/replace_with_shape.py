@@ -12,15 +12,12 @@ from qgis.core import (
 from PyQt5.QtCore import QMetaType, QVariant
 
 from ..infrastructure.geometry_helpers import (
-    clamp,
     regular_polygon,
     safe_pole_of_inaccessibility,
 )
-from ..infrastructure.feature_builder import create_output_fields, build_feature
-from ..infrastructure.scale_helpers import compute_scale_factor
+from ..infrastructure.feature_builder import create_output_fields, build_feature, BATCH_SIZE
+from ..infrastructure.scale_helpers import compute_scale_factor, validate_scale_value
 from .base_algorithm import TesseraAlgorithm
-
-_BATCH_SIZE = 1000
 
 _SHAPE_OPTIONS = ['Circle', 'Square', 'Hexagon']
 _SCALE_METHOD_OPTIONS = ['Proportional area', 'Square root', 'Logarithmic']
@@ -271,35 +268,8 @@ class ReplaceWithShapeAlgorithm(TesseraAlgorithm):
             if geom.isEmpty() or geom.isNull():
                 continue
 
-            raw_value = feature.attribute(value_field)
-            if raw_value is None or raw_value == QVariant():
-                feedback.pushWarning(
-                    f'Feature {feature.id()}: NULL or missing value '
-                    f'in field "{value_field}", skipping.'
-                )
-                continue
-
-            try:
-                value = float(raw_value)
-            except (TypeError, ValueError):
-                feedback.pushWarning(
-                    f'Feature {feature.id()}: non-numeric value '
-                    f'"{raw_value}" in field "{value_field}", skipping.'
-                )
-                continue
-
-            if value < 0:
-                feedback.reportError(
-                    f'Feature {feature.id()}: negative value {value} '
-                    f'in field "{value_field}", skipping.'
-                )
-                continue
-
-            if value == 0:
-                feedback.pushWarning(
-                    f'Feature {feature.id()}: zero value '
-                    f'in field "{value_field}", skipping.'
-                )
+            value = validate_scale_value(feature, value_field, feedback)
+            if value is None:
                 continue
 
             # Transform to working CRS and get area
@@ -399,7 +369,7 @@ class ReplaceWithShapeAlgorithm(TesseraAlgorithm):
             batch.append(out_feat)
 
             # Batch write
-            if len(batch) >= _BATCH_SIZE:
+            if len(batch) >= BATCH_SIZE:
                 sink.addFeatures(batch)
                 batch = []
 

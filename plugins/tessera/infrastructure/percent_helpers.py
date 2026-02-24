@@ -1,6 +1,8 @@
 """Shared percentage-value interpretation logic for Tessera algorithms."""
 from PyQt5.QtCore import QVariant
 
+VALUE_RANGE_OPTIONS = ['0 - 100', '0 - 1', 'Auto scale']
+
 
 def value_to_fraction(raw_value, value_range, auto_divisor):
     """Convert a raw attribute value to a 0-1 fraction.

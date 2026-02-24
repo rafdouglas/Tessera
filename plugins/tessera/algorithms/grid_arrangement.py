@@ -7,7 +7,6 @@ chain after Replace with Shape or Scale by Value.
 import math
 
 from qgis.core import (
-    QgsCoordinateReferenceSystem,
     QgsFeature,
     QgsGeometry,
     QgsPointXY,

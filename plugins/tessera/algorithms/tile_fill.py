@@ -23,11 +23,12 @@ from ..infrastructure.geometry_helpers import (
     regular_polygon,
     split_polygon_by_fraction,
 )
-from ..infrastructure.feature_builder import create_output_fields, build_feature
+from ..infrastructure.feature_builder import create_output_fields, build_feature, BATCH_SIZE
 from ..infrastructure.percent_helpers import (
     detect_divisor,
     read_fraction,
     value_to_fraction,
+    VALUE_RANGE_OPTIONS,
 )
 from .base_algorithm import TesseraAlgorithm
 
@@ -56,9 +57,6 @@ _GRID_TYPE_MAP = {
     _SHAPE_DIAMOND: 'diamond',
 }
 
-_VALUE_RANGE_OPTIONS = ['0 - 100', '0 - 1', 'Auto scale']
-
-_BATCH_SIZE = 1000
 _WARNING_THRESHOLD = 50_000
 
 # Circle rendering constants
@@ -204,7 +202,7 @@ class TileFillAlgorithm(TesseraAlgorithm):
             QgsProcessingParameterEnum(
                 'PERCENT_RANGE',
                 'Percentage value range',
-                options=_VALUE_RANGE_OPTIONS,
+                options=VALUE_RANGE_OPTIONS,
                 defaultValue=0,
                 optional=True,
             )
@@ -436,7 +434,7 @@ class TileFillAlgorithm(TesseraAlgorithm):
                     total_output += 1
 
                 # Batch write
-                if len(batch) >= _BATCH_SIZE:
+                if len(batch) >= BATCH_SIZE:
                     sink.addFeatures(batch)
                     batch = []
 

@@ -14,6 +14,12 @@ Use bullet lists for simplicity. Older entries can be manually removed when they
 
 ---
 
+### 2026-02-16 - All algorithms: TypeError on QGIS < 3.38 (QgsField / QMetaType.Type)
+- **Symptom:** `TypeError: QgsField(): arguments did not match any overloaded call: overload 1: argument 'type' has unexpected type 'Type'`. Every algorithm fails immediately. Reported on QGIS 3.34.0.
+- **Cause:** ADR-004 mandated `QMetaType.Type` for `QgsField` construction, but QGIS only accepts this from 3.38+. Older versions require `QVariant.Type`. All algorithms pass `QMetaType.Type` tuples through `feature_builder.create_output_fields()`.
+- **Fix:** Added `_resolve_field_type()` shim in `feature_builder.py` — probes `QgsField` once at first use, caches result, maps to `QVariant.Type` on older QGIS. Updated lib source + both standalone plugin copies. ADR-004 amended.
+- **Prevention:** When adopting newer APIs, always verify against declared minimum QGIS version (3.28), not just current dev version.
+
 ### 2026-02-08 - Arrange Features: Russia flung 1.5M meters from other features
 - **Cause:** MEC (Minimum Enclosing Circle) radius used as collision proxy. Russia's multipart geometry (European + Far East landmass) has an enormous MEC spanning both parts. Centroid lands in central Siberia, meaningless for either part.
 - **Fix:** Three changes: (1) replaced MEC with area-equivalent radius `sqrt(area/pi)`, (2) explode multipart geometries into single parts before force simulation, (3) added geometry-based overlap refinement for separate mode using `QgsGeometry.intersects()`.

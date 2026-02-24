@@ -62,3 +62,12 @@ Each entry should include:
 - **Status:** Completed
 - **Description:** Created release infrastructure for v0.5.4: (1) GitHub Actions workflow `.github/workflows/release.yml` that auto-creates releases when version tags are pushed, (2) `scripts/prepare_release.sh` script to package and prepare versioned ZIPs in `releases/` folder, (3) Packaged v0.5.4 release files (tessera-0.5.4.zip, percentage_split-0.5.4.zip, stripe_hatching-0.5.4.zip).
 - **Files:** .github/workflows/release.yml (new), scripts/prepare_release.sh (new), releases/ (populated), README.md (building section updated)
+
+### 2026-02-24 - Codebase audit remediation (Phases 1-3)
+- **Status:** Completed
+- **Description:** Implemented the consensus-approved remediation plan from the 2026-02-24 codebase audit. Three phases:
+  - **Phase 1 (Quick Wins):** Removed unused imports from 7 files, fixed `scale_helpers.py` missing from vendoring list in `package.py`, fixed 3 stale `lib/tessera_common` → `lib/ideogis_common` docstring references, added deprecation note to `resolve_overlaps.py`.
+  - **Phase 2 (DRY Extraction):** Centralized `BATCH_SIZE` constant in `feature_builder.py` (was duplicated in 7 files), centralized `VALUE_RANGE_OPTIONS` in `percent_helpers.py` (was in 2 files), extracted `validate_scale_value()` helper to `scale_helpers.py` (was ~30-line duplicate in `scale_by_value.py` and `replace_with_shape.py`).
+  - **Phase 3 (Performance & Quality):** Added `_build_spatial_grid`, `_iter_nearby_pairs`, `_max_geom_extent` helpers to `arrange_features.py`. Applied spatial indexing to 5 O(n^2) refinement/counting methods (two geometry-access patterns: Pattern A direct geoms, Pattern B displaced geoms with offsets). Consolidated `_iterate_force_directed_loop` from 13 to 9 parameters by moving 4 params into the config dict.
+- **Tests:** 507 passing after each phase, 0 failures.
+- **Files changed:** ~15 files (7 algorithm files, 3 library/infrastructure files, 1 packaging script, 1 standalone plugin, 1 shim, 1 docs file, 1 test data script)

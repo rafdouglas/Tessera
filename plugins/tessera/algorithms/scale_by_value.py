@@ -15,7 +15,7 @@ from ..infrastructure.geometry_helpers import (
     safe_pole_of_inaccessibility,
     scale_geometry,
 )
-from ..infrastructure.feature_builder import create_output_fields, build_feature
+from ..infrastructure.feature_builder import create_output_fields, build_feature, BATCH_SIZE
 from ..infrastructure.scale_helpers import (
     METHOD_PROPORTIONAL_AREA as _METHOD_PROPORTIONAL_AREA,
     METHOD_PROPORTIONAL_SQRT as _METHOD_PROPORTIONAL_SQRT,
@@ -25,6 +25,7 @@ from ..infrastructure.scale_helpers import (
     REF_FIXED as _REF_FIXED,
     compute_reference,
     compute_scale_factor,
+    validate_scale_value,
 )
 from .base_algorithm import TesseraAlgorithm
 
@@ -37,7 +38,6 @@ _CENTER_POLE = 1
 
 _CENTER_METHOD_OPTIONS = ['Centroid', 'Pole of inaccessibility']
 
-_BATCH_SIZE = 1000
 
 
 class ScaleByValueAlgorithm(TesseraAlgorithm):
@@ -263,39 +263,9 @@ class ScaleByValueAlgorithm(TesseraAlgorithm):
                 feature_count += 1
                 continue
 
-            # Read value
-            raw_value = feature.attribute(value_field)
-            if raw_value is None or raw_value == QVariant():
-                feedback.pushWarning(
-                    f'Feature {feature.id()}: NULL value in field '
-                    f'"{value_field}", skipping.'
-                )
-                feature_count += 1
-                continue
-
-            try:
-                value = float(raw_value)
-            except (TypeError, ValueError):
-                feedback.pushWarning(
-                    f'Feature {feature.id()}: non-numeric value '
-                    f'"{raw_value}" in field "{value_field}", skipping.'
-                )
-                feature_count += 1
-                continue
-
-            if value < 0:
-                feedback.reportError(
-                    f'Feature {feature.id()}: negative value {value} '
-                    f'in field "{value_field}". Negative values are not supported.'
-                )
-                feature_count += 1
-                continue
-
-            if value == 0:
-                feedback.pushWarning(
-                    f'Feature {feature.id()}: zero value in field '
-                    f'"{value_field}", skipping.'
-                )
+            # Read and validate value
+            value = validate_scale_value(feature, value_field, feedback)
+            if value is None:
                 feature_count += 1
                 continue
 
@@ -337,7 +307,7 @@ class ScaleByValueAlgorithm(TesseraAlgorithm):
             batch.append(out_feat)
 
             # Batch write
-            if len(batch) >= _BATCH_SIZE:
+            if len(batch) >= BATCH_SIZE:
                 sink.addFeatures(batch)
                 batch = []
 
