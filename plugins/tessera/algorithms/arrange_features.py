@@ -325,7 +325,6 @@ class ArrangeFeaturesAlgorithm(TesseraAlgorithm):
         """Override base to support engineering CRS output."""
         source = self.parameterAsSource(parameters, 'INPUT', context)
         output_fields = self.get_output_fields(source, parameters, context)
-        mode = self.parameterAsEnum(parameters, 'MODE', context)
         force_eng = self.parameterAsBool(parameters, 'FORCE_ENGINEERING_CRS', context)
 
         if force_eng:

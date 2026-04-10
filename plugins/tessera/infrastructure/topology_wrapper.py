@@ -534,7 +534,7 @@ class TopologyTransformer:
             repaired = new_geom.buffer(0, 5)
             if not repaired.isNull() and self._geometry_acceptable(repaired, original_area):
                 return repaired
-        except Exception:
+        except Exception:  # nosec B110
             pass  # GEOS buffer failed on malformed input; try next method
 
         # Step 2: makeValid() — heavier, handles more complex invalidity
@@ -542,7 +542,7 @@ class TopologyTransformer:
             repaired = new_geom.makeValid()
             if not repaired.isNull() and self._geometry_acceptable(repaired, original_area):
                 return repaired
-        except Exception:
+        except Exception:  # nosec B110
             pass  # GEOS makeValid failed; fall through to original
 
         # All repair attempts failed — keep original geometry unchanged
@@ -552,7 +552,7 @@ class TopologyTransformer:
                     'TopologyTransformer: geometry repair failed, '
                     'keeping original geometry'
                 )
-            except Exception:
+            except Exception:  # nosec B110
                 pass  # feedback itself may be unavailable in edge cases
         return QgsGeometry(original_geom)
 

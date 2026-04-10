@@ -3,7 +3,9 @@
 [![QGIS 3.28+](https://img.shields.io/badge/QGIS-3.28%2B-green)](https://qgis.org)
 [![License: GPL v3](https://img.shields.io/badge/License-GPLv3-blue.svg)](https://www.gnu.org/licenses/gpl-3.0.html)
 [![Tests](https://img.shields.io/badge/tests-500%2B-brightgreen)](tests/)
-[![Version 0.5.4](https://img.shields.io/badge/version-0.5.4-blue)](https://github.com/rafdouglas/tessera/releases)
+[![Version 0.5.8](https://img.shields.io/badge/version-0.5.8-blue)](https://github.com/rafdouglas/tessera/releases)
+[![Ruff](https://img.shields.io/endpoint?url=https://raw.githubusercontent.com/astral-sh/ruff/main/assets/badge/v2.json)](https://github.com/astral-sh/ruff)
+[![security: bandit](https://img.shields.io/badge/security-bandit-yellow.svg)](https://github.com/PyCQA/bandit)
 
 Cartographic ideogram toolkit for QGIS — thematic maps where geographic shapes communicate data visually.
 

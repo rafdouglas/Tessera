@@ -145,7 +145,7 @@ class TestAlgorithmStubs:
             assert isinstance(alg.group(), str) and len(alg.group()) > 0
             assert isinstance(alg.groupId(), str) and len(alg.groupId()) > 0
             # createInstance should return an instance of the same class
-            assert type(alg.createInstance()) == type(alg)
+            assert type(alg.createInstance()) is type(alg)
 
 
 class TestTopologyWrapperStub:
