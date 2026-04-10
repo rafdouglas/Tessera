@@ -1,6 +1,6 @@
 [project]
 name = "tessera"
-version = "0.5.8"
+version = "0.5.9"
 description = "Tessera — Cartographic ideogram toolkit for QGIS"
 requires-python = ">=3.9"
 license = "GPL-3.0-only"
