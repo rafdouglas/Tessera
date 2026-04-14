@@ -36,3 +36,11 @@ Thumbs.db
 
 # Local config
 settings.json
+
+.vexp/
+images/screenshots/
+
+plugins/percentage_split/LICENSE
+plugins/percentage_split/infrastructure/scale_helpers.py
+plugins/stripe_hatching/LICENSE
+plugins/stripe_hatching/infrastructure/scale_helpers.py

@@ -2,7 +2,7 @@
 name=Stripe Hatching
 qgisMinimumVersion=3.28
 description=Stable version for public release
-version=0.6.0
+version=0.6.1
 author=RafDouglas C. Tommasi
 email=rafdouglas@exponential.engineering
 about=Fill each polygon with parallel rectangular stripes at configurable angle and spacing. Topology-aware for seamless multi-polygon fills.
@@ -12,5 +12,5 @@ homepage=https://github.com/rafdouglas/tessera
 tags=cartography,ideogram,stripe,hatching
 category=Analysis
 icon=icon.png
-experimental=True
+experimental=False
 deprecated=False
